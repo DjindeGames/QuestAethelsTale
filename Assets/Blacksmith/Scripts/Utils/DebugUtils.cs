@@ -6,58 +6,108 @@ namespace Blacksmith
     {
         #region Methods
         //PUBLIC
-        public static void LogError(object obj, string desc)
+        public static string GetObjectType(object obj)
         {
-            if (ObjectUtils.TryCast<MonoBehaviour>(obj, out MonoBehaviour mbObject))
-            {
-                Debug.Log("<color=red><b>[" + mbObject.name + "]" + " Error in script \"" + obj.GetType().ToString() + "\": " + desc + "</b></color>");
-            }
-            else
-            {
-                Debug.Log("<color=red><b> Error in script \"" + obj.GetType().ToString() + "\": " + desc + "</b></color>");
-            }
+            return obj.GetType().ToString();
         }
 
-        public static void LogWarning(object obj, string desc)
+        public static string ToQuote(string quote)
         {
-            if (ObjectUtils.TryCast<MonoBehaviour>(obj, out MonoBehaviour mbObject))
+            return "\"" + quote + "\"";
+        }
+
+        public static void LogError(object obj, string desc, bool printCallstack = false)
+        {
+            string log;
+
+            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
             {
-                Debug.Log("<color=yellow><b>[" + mbObject.name + "]" + " Warning in script \"" + obj.GetType().ToString() + "\": " + desc + "</b></color>");
+                log = "[" + mbObject.name + "] Error in script \"" + GetObjectType(obj) + "\": " + desc;
             }
             else
             {
-                Debug.Log("<color=yellow> Warning in script \"" + obj.GetType().ToString() + "\": " + desc + "</b></color>");
+                log = "Error in script \"" + GetObjectType(obj) + "\": " + desc;
             }
+
+            Debug.Log("<color=red><b>" + log + "</b></color>");
+#if !UNITY_EDITOR
+            if (DebugHelper.TryGetDebugLogger(out DebugLoggerComponent debugLogger))
+            {
+                debugLogger.RegisterLog(log, EDebugLogType.Error);
+            }
+#endif
+        }
+
+        public static void LogWarning(object obj, string desc, bool printCallstack = false)
+        {
+            string log;
+
+            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
+            {
+                log = "[" + mbObject.name + "] Warning in script \"" + GetObjectType(obj) + "\": " + desc;
+            }
+            else
+            {
+                log = "Warning in script \"" + GetObjectType(obj) + "\": " + desc;
+            }
+
+            Debug.Log("<color=yellow><b>" + log + "</b></color>");
+
+#if !UNITY_EDITOR
+            if (DebugHelper.TryGetDebugLogger(out DebugLoggerComponent debugLogger))
+            {
+                debugLogger.RegisterLog(log, EDebugLogType.Warning);
+            }
+#endif
         }
 
         public static void LogSuccess(object obj, string desc)
         {
-            if (ObjectUtils.TryCast<MonoBehaviour>(obj, out MonoBehaviour mbObject))
+            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
             {
-                Debug.Log("<color=green>[" + mbObject.name + "]\"" + obj.GetType().ToString() + "\": " + desc + "</color>");
+                Debug.Log("<color=green>[" + mbObject.name + "]\"" + GetObjectType(obj) + "\": " + desc + "</color>");
             }
             else
             {
-                Debug.Log("<color=green>\"" + obj.GetType().ToString() + "\": " + desc + "</color>");
+                Debug.Log("<color=green>\"" + GetObjectType(obj) + "\": " + desc + "</color>");
             }
         }
 
         public static void LogLocalizationWarning(string ID)
         {
-            Debug.Log("<color=purple>\"" + ID + "\" was not found in LocalizationDictionary, will use temporary string instead.</color>");
+            string log = "\"" + ID + "\" was not found in LocalizationDictionary, will use temporary string instead.";
+            Debug.Log("<color=purple>" + log + "</color>");
+#if !UNITY_EDITOR
+            if (DebugHelper.TryGetDebugLogger(out DebugLoggerComponent debugLogger))
+            {
+                debugLogger.RegisterLog(log, EDebugLogType.LocalizationWarning);
+            }
+#endif
+        }
+
+        public static void LogLocalizationWarning(string ID, string desc)
+        {
+            string log = "\"" + ID + "\" " + desc;
+            Debug.Log("<color=purple>" + log + "</color>");
+#if !UNITY_EDITOR
+            if (DebugHelper.TryGetDebugLogger(out DebugLoggerComponent debugLogger))
+            {
+                debugLogger.RegisterLog(log, EDebugLogType.LocalizationWarning);
+            }
+#endif
         }
 
         public static void Log(object obj, string desc)
         {
-            if (ObjectUtils.TryCast<MonoBehaviour>(obj, out MonoBehaviour mbObject))
+            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
             {
-                Debug.Log("[" + mbObject.name + "]\"" + obj.GetType().ToString() + "\": " + desc);
+                Debug.Log("[" + mbObject.name + "]\"" + GetObjectType(obj) + "\": " + desc);
             }
             else
             {
-                Debug.Log("\"" + obj.GetType().ToString() + "\": " + desc);
+                Debug.Log("\"" + GetObjectType(obj) + "\": " + desc);
             }
         }
-        #endregion
+#endregion
     }
 }

@@ -24,7 +24,6 @@ namespace Blacksmith
         [BoxGroup("References")]
         [SerializeField]
         private GameObject m_AudioSourcePrefab;
-        public LocalizedString m_String;
         #endregion
 
         #region Events
@@ -48,18 +47,17 @@ namespace Blacksmith
             {
                 DebugUtils.LogWarning(this, "AudioSourcePrefab not set!");
             }
-            m_String.GetValue();
         }
 
         //PUBLIC
-        public OneShotSoundComponent PlaySound(Sound sound)
+        public OneShotSoundComponent PlaySound(SoundData data)
         {
-            return Play2DSound(sound.m_AudioClip, sound.m_SoundType);
+            return Play2DSound(data.m_AudioClip, data.m_SoundType);
         }
 
-        public OneShotSoundComponent PlaySound(Sound sound, Vector3 position)
+        public OneShotSoundComponent PlaySound(SoundData data, Vector3 position)
         {
-            return Play3DSound(sound.m_AudioClip, sound.m_SoundType, position, sound.m_MinRange, sound.m_MaxRange);
+            return Play3DSound(data.m_AudioClip, data.m_SoundType, position, data.m_MinRange, data.m_MaxRange);
         }
 
         //PROTECTED
@@ -85,9 +83,9 @@ namespace Blacksmith
         {
             OneShotSoundComponent oneShotSound = null;
             GameObject instantiatedSource = Instantiate(m_AudioSourcePrefab);
-            if (ObjectUtils.GetComponent<AudioSource>(instantiatedSource, out AudioSource source))
+            if (instantiatedSource.TryGetComponent(out AudioSource source))
             {
-                if (ObjectUtils.GetComponent<OneShotSoundComponent>(instantiatedSource, out oneShotSound))
+                if (instantiatedSource.TryGetComponent(out oneShotSound))
                 {
                     instantiatedSource.transform.position = position;
                     source.clip = sound;

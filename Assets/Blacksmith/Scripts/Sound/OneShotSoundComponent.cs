@@ -39,7 +39,7 @@ namespace Blacksmith
         protected override void Awake()
         {
             base.Awake();
-            if (ObjectUtils.GetComponent<AudioSource>(gameObject, out m_AudioSource))
+            if (TryGetComponent(out m_AudioSource))
             {
                 m_AudioSource.Play();
             }

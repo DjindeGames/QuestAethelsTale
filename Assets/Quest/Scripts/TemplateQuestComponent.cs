@@ -3,9 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Blacksmith
+using Blacksmith;
+
+namespace Quest
 {
-    public abstract class TemplateComponent : BaseComponent
+    public abstract class TemplateQuestComponent : BaseComponent
     {
         #region Serialized Fields
         //PUBLIC

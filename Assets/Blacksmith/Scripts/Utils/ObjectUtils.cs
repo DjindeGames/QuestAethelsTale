@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 namespace Blacksmith
 {
@@ -19,21 +18,6 @@ namespace Blacksmith
             {
                 return false;
             }
-        }
-
-        public static bool GetComponent<T>(GameObject obj, out T result)
-        {
-            result = obj.GetComponent<T>();
-            return (result != null);
-        }
-
-        public static bool HasFlag(GameObject obj, EBaseFlags flag)
-        {
-            if (TryCast<BaseComponent>(obj, out BaseComponent baseComponent))
-            {
-                return baseComponent.HasFlag(flag);
-            }
-            return false;
         }
         #endregion
     }

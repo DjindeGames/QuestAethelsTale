@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Blacksmith
 {
-    [System.Serializable]
-    public class Sound
+    [CreateAssetMenu(fileName = "SoundData", menuName = "Blacksmith/Sound/SoundData")]
+    public class SoundData : DBEntry
     {
         #region Serialized Fields
         //PUBLIC

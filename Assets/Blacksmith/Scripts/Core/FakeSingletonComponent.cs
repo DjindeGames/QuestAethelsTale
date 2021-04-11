@@ -1,11 +1,6 @@
-using NaughtyAttributes;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 namespace Blacksmith
 {
-    public abstract class TemplateComponent : BaseComponent
+    public abstract class FakeSingletonComponent : BaseComponent
     {
         #region Serialized Fields
         //PUBLIC
@@ -23,6 +18,7 @@ namespace Blacksmith
         //PUBLIC
         //PROTECTED
         //PRIVATE
+        private static int s_Instances = 0;
         #endregion
 
         #region Methods
@@ -30,6 +26,11 @@ namespace Blacksmith
         protected override void Awake()
         {
             base.Awake();
+            s_Instances++;
+            if (s_Instances > 1)
+            {
+                DebugUtils.LogError(this, "There is already one instance created, please remove this one!");
+            }
         }
 
         protected override void Start()
@@ -38,12 +39,6 @@ namespace Blacksmith
         }
         //PUBLIC
         //PROTECTED
-        protected override EBaseFlags[] GetBaseFlags()
-        {
-            return new EBaseFlags[]
-            {
-            };
-        }
         //PRIVATE
         #endregion
     }
