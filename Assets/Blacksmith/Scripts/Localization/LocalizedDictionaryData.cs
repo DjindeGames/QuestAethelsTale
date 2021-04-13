@@ -1,7 +1,6 @@
 using NaughtyAttributes;
-using System;
 using System.Collections.Generic;
-using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace Blacksmith
@@ -17,131 +16,215 @@ namespace Blacksmith
         public string[] m_SupportedLanguages;
         [BoxGroup("Content")]
         public LocalizedStringData[] m_Strings;
-#if UNITY_EDITOR
-        [BoxGroup("Generation")]
+        [Header("Generation")]
         public string m_FilePath;
-        [Button("GenerateDictionary")]
-        public void GenerateDictionary()
+        #endregion
+
+#if UNITY_EDITOR
+        #region Methods
+        [Button("Generate Dictionary")]
+        public void ButtonGenerateDictionary()
         {
-            try
-            {
-                JSONObject dictionaryContent = new JSONObject(System.IO.File.ReadAllText(m_FilePath));
-                UpdateDictionary(dictionaryContent);
+            GenerateDictionary();
+        }
 
+        [Button("Backup Dictionary")]
+        public void ButtonBackupDictionary()
+        {
+            if (BackupDictionary())
+            {
+                DebugUtils.LogSuccess(this, "Successfully backuped dictionary.");
             }
-            catch (Exception exception) when (
-                exception is FileNotFoundException || 
-                exception is DirectoryNotFoundException
-                )
-
+            else
             {
-                DebugUtils.LogWarning(this, "File does not exists, creating a new dictionary file.");
-                System.IO.File.WriteAllText(m_FilePath, "");
-                JSONObject dictionaryContent = new JSONObject(System.IO.File.ReadAllText(m_FilePath));
-                UpdateDictionary(dictionaryContent);
+                DebugUtils.LogWarning(this, "Could not backup dictionary.");
             }
         }
 
-        private void UpdateDictionary(JSONObject dictionary)
+        [Button("Clean Dictionary")]
+        public void ButtonCleanDictionary()
+        {
+            if (EditorUtility.DisplayDialog("Warning", "This will remove all unsuported entries from the following dictionary:\n" + m_FilePath + "\nAre you sure?", "Confirm (No turning back!)", "Cancel"))
+            {
+                GenerateDictionary(false);
+            }
+        }
+
+        [Button("Delete Dictionary")]
+        public void ButtonDeleteDictionary()
+        {
+            if (EditorUtility.DisplayDialog("Warning", "Are you sure you want to delete the following dictionary?\n" + m_FilePath, "Confirm (No turning back!)", "Cancel"))
+            {
+                if (BackupDictionary())
+                {
+                    FileUtils.DeleteFile(m_FilePath, true);
+                }
+                else
+                {
+                    DebugUtils.LogError(this, "Could not backup dictionary, aborting deletion!");
+                }
+            }
+        }
+
+        [Button("Delete Backup")]
+        public void ButtonDeleteBackup()
+        {
+            if (EditorUtility.DisplayDialog("Warning", "Are you sure you want to delete existing backup for the following dictionary?\n" + m_FilePath, "Confirm (No turning back!)", "Cancel"))
+            {
+                DeleteBackup();
+            }
+        }
+
+        private void GenerateDictionary(bool safeMode = true)
         {
             if (m_SupportedLanguages.Length == 0)
             {
-                DebugUtils.LogWarning(this, "No supported languages, aborting generation!");
+                DebugUtils.LogError(this, "No supported languages, aborting generation!");
                 return;
             }
 
-            List<string> supportedLanguages = new List<string>();
-            foreach(string language in m_SupportedLanguages)
+            if (HasDuplicatedLanguages(out string duplicatedLanguage))
             {
-                if (!supportedLanguages.Contains(language))
-                {
-                    supportedLanguages.Add(language);
-                }
-                else
-                {
-                    DebugUtils.LogError(this, "Found a duplicated language ID: " + DebugUtils.ToQuote(language) + " in supported languages, aborting generation!");
-                }
+                DebugUtils.LogError(this, "Found a duplicated language ID: " + DebugUtils.ToQuote(duplicatedLanguage) + " in supported languages, aborting generation!");
+                return;
             }
 
-            //Start by parsing existing content from file
-            LocalizedEntries dictionaryEntries = new LocalizedEntries();
-
-            foreach (string stringID in dictionary.ToDictionary().Keys)
+            if (HasDuplicatedStrings(out string duplicatedString))
             {
-                if (!dictionaryEntries.ContainsKey(stringID))
+                DebugUtils.LogError(this, "Found a duplicated string ID: " + DebugUtils.ToQuote(duplicatedString) + " in registered strings, aborting generation!");
+                return;
+            }
+
+            if (JSONUtils.TryLoadFromPath(m_FilePath, out JSONObject dictionary, true))
+            {
+                //Start by parsing existing content from file
+                if (LocalizationUtils.TryGetLocalizedEntriesFromJSONObject(dictionary, out LocalizedEntries dictionaryEntries, safeMode))
                 {
-                    Dictionary<string, string> valuesByLanguage = new Dictionary<string, string>();
-                    foreach (string languageID in dictionary.GetField(stringID).ToDictionary().Keys)
+                    //Adding new languages for existing strings
+                    List<string> stringIDsToRemove = new List<string>();
+                    foreach (string stringID in dictionaryEntries.Keys)
                     {
-                        if (!valuesByLanguage.ContainsKey(languageID))
+                        //Remove unsupported strings if needed
+                        if (!IsStringSupported(stringID))
                         {
-                            valuesByLanguage[languageID] = dictionary.GetField(stringID).GetField(languageID).ToString();
-                            if (!IsLanguageSupported(languageID))
+                            if (safeMode)
                             {
-                                DebugUtils.LogWarning(this, "Found an unsupported language ID: " + DebugUtils.ToQuote(languageID) + " for string ID: " + DebugUtils.ToQuote(stringID) + ", consider removing this entry.");
+                                DebugUtils.LogWarning(this, "Found a non supported string ID: " + DebugUtils.ToQuote(stringID) + ". Please consider removing this entry.");
+                            }
+                            else
+                            {
+                                stringIDsToRemove.Add(stringID);
+                                break;
                             }
                         }
-                        //Duplicated language, abort mission!
-                        else
+
+                        List<string> missingLanguages = new List<string>(m_SupportedLanguages);
+                        List<string> languagesToRemove = new List<string>();
+                        foreach (string languageID in dictionaryEntries[stringID].Keys)
                         {
-                            DebugUtils.LogError(this, "Found a duplicated language ID: " + DebugUtils.ToQuote(languageID) + " for string ID: " + DebugUtils.ToQuote(stringID) + ", aborting generation!");
-                            return;
+                            if (IsLanguageSupported(languageID))
+                            {
+                                missingLanguages.Remove(languageID);
+                            }
+                            else
+                            {
+                                if (safeMode)
+                                {
+                                    DebugUtils.LogWarning(this, "Found a non supported language ID: " + DebugUtils.ToQuote(languageID) + " for string " + DebugUtils.ToQuote(stringID) + ". Please consider removing this entry.");
+                                }
+                                else
+                                {
+                                    languagesToRemove.Add(languageID);
+                                }
+                            }
+                        }
+
+                        //Remove unsupported languages if needed
+                        foreach (string languageID in languagesToRemove)
+                        {
+                            dictionaryEntries[stringID].Remove(languageID);
+                            DebugUtils.Log(this, "Removed a non supported language entry: " + DebugUtils.ToQuote(languageID) + " for string " + DebugUtils.ToQuote(stringID) + ".");
+                        }
+
+                        //Adding missing language entries
+                        foreach (string languageID in missingLanguages)
+                        {
+                            if (!dictionaryEntries[stringID].ContainsKey(languageID))
+                            {
+                                dictionaryEntries[stringID][languageID] = "";
+                            }
                         }
                     }
-                    //Adding new supported languages
-                    foreach(string languageID in m_SupportedLanguages)
+
+                    //Remove unsupported string Ids if needed
+                    foreach (string stringID in stringIDsToRemove)
                     {
-                        if (!valuesByLanguage.ContainsKey(languageID))
+                        dictionaryEntries.Remove(stringID);
+                        DebugUtils.Log(this, "Removed a non supported entry: " + DebugUtils.ToQuote(stringID) + ".");
+                    }
+
+                    //Adding missing entries
+                    foreach (LocalizedStringData stringData in m_Strings)
+                    {
+                        if (!dictionaryEntries.ContainsKey(stringData.GetID()))
                         {
-                            valuesByLanguage[languageID] = Constants.BLACKSMITH_INVALID_LOCALIZED_STRING_VALUE;
-                            DebugUtils.Log(this, DebugUtils.ToQuote(languageID) + " language entry added for string ID: " + DebugUtils.ToQuote(stringID) + ".");
+                            if (stringData.GetID() != "")
+                            {
+                                Dictionary<string, string> valuesByLanguage = new Dictionary<string, string>();
+                                foreach (string language in m_SupportedLanguages)
+                                {
+                                    valuesByLanguage[language] = "";
+                                }
+                                dictionaryEntries[stringData.GetID()] = valuesByLanguage;
+                            }
+                            else
+                            {
+                                DebugUtils.LogError(this, "Localized string \"" + stringData.name + "\" has no defined ID, aborting generation!");
+                                return;
+                            }
                         }
                     }
-                    dictionaryEntries[stringID] = valuesByLanguage;
-                }
-                //Duplicated string ID, abort mission!
-                else
-                {
-                    DebugUtils.LogError(this, "Found a duplicated string ID: " + DebugUtils.ToQuote(stringID) + ", aborting generation!");
-                    return;
-                }
-            }
-            //Adding new string IDs
-            foreach (LocalizedStringData stringData in m_Strings)
-            {
-                if (!dictionaryEntries.ContainsKey(stringData.GetID()))
-                {
-                    if (stringData.GetID() != "")
+
+                    //Write dictionary back to file
+                    if (BackupDictionary())
                     {
-                        Dictionary<string, string> valuesByLanguage = new Dictionary<string, string>();
-                        foreach (string language in m_SupportedLanguages)
-                        {
-                            valuesByLanguage[language] = Constants.BLACKSMITH_INVALID_LOCALIZED_STRING_VALUE;
-                        }
-                        dictionaryEntries[stringData.GetID()] = valuesByLanguage;
+                        JSONUtils.WriteToPath(m_FilePath, LocalizationUtils.GetJSONObjectFromLocalizedEntries(dictionaryEntries), true);
                     }
                     else
                     {
-                        DebugUtils.LogError(this, "Localized string \"" + stringData.name + "\" has no defined ID, aborting generation!");
-                        return;
+                        DebugUtils.LogError(this, "Could not backup dictionary, aborting generation!");
                     }
                 }
-            }
-
-            //Write dictionary back to file
-            JSONObject updatedDictionary = new JSONObject();
-
-            foreach(string stringID in dictionaryEntries.Keys)
-            {
-                JSONObject valuesByLanguage = new JSONObject();
-                foreach (string languageID in dictionaryEntries[stringID].Keys)
+                else
                 {
-                    valuesByLanguage.AddField(languageID, dictionaryEntries[stringID][languageID]);
+                    DebugUtils.LogError(this, "Generation failure because of one or more errors in file " + DebugUtils.ToQuote(m_FilePath) + ". Please fix them before generation.");
                 }
-                updatedDictionary.AddField(stringID, valuesByLanguage);
             }
+            else
+            {
+                DebugUtils.LogError(this, "Could not create/read file at " + DebugUtils.ToQuote(m_FilePath));
+            }
+        }
 
-            System.IO.File.WriteAllText(m_FilePath, updatedDictionary.Print(true));
+        private bool BackupDictionary()
+        {
+            return FileUtils.CreateFolder(GetBackupFolderPath()) &&
+                (!FileUtils.FileExists(m_FilePath) || FileUtils.CopyFile(m_FilePath, GetBackupFolderPath() + '/' + GenerateBackupFileName()));
+        }
+
+        private bool DeleteBackup()
+        {
+            return FileUtils.DeleteFolder(GetBackupFolderPath(), true, true);
+        }
+
+        private string GenerateBackupFileName()
+        {
+            return FileUtils.InsertBeforeFileExtension(FileUtils.GetFileName(m_FilePath), (TimeUtils.GetFormatedTime("MM-dd-yyyy_HH-mm-ss") + Constants.BLACKSMITH_DICTIONARY_BACKUP_FILE_EXTENSION));
+        }
+
+        private string GetBackupFolderPath()
+        {
+            return FileUtils.RemoveFileFromPath(m_FilePath) + FileUtils.GetFileNameWithoutExtension(m_FilePath) + Constants.BLACKSMITH_DICTIONARY_BACKUP_FOLDER_NAME;
         }
 
         private bool IsLanguageSupported(string languageID)
@@ -155,11 +238,57 @@ namespace Blacksmith
             }
             return false;
         }
+
+        private bool IsStringSupported(string languageID)
+        {
+            foreach (LocalizedStringData stringData in m_Strings)
+            {
+                if (stringData.GetID() == languageID)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool HasDuplicatedLanguages(out string duplicated)
+        {
+            duplicated = "";
+            List<string> supportedLanguages = new List<string>();
+            foreach (string language in m_SupportedLanguages)
+            {
+                if (!supportedLanguages.Contains(language))
+                {
+                    supportedLanguages.Add(language);
+                }
+                else
+                {
+                    duplicated = language;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool HasDuplicatedStrings(out string duplicated)
+        {
+            duplicated = "";
+            List<string> registeredStrings = new List<string>();
+            foreach (LocalizedStringData localizedString in m_Strings)
+            {
+                if (!registeredStrings.Contains(localizedString.GetID()))
+                {
+                    registeredStrings.Add(localizedString.GetID());
+                }
+                else
+                {
+                    duplicated = localizedString.GetID();
+                    return true;
+                }
+            }
+            return false;
+        }
+        #endregion
 #endif
-        #endregion
-
-        #region Methods
-
-        #endregion
     }
 }

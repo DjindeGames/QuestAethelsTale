@@ -8,7 +8,7 @@ namespace Blacksmith
         //PUBLIC
         public static string GetObjectType(object obj)
         {
-            return obj.GetType().ToString();
+            return (obj != null) ? obj.GetType().ToString() : "";
         }
 
         public static string ToQuote(string quote)
@@ -20,9 +20,13 @@ namespace Blacksmith
         {
             string log;
 
-            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
+            if (obj != null && ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
             {
                 log = "[" + mbObject.name + "] Error in script \"" + GetObjectType(obj) + "\": " + desc;
+            }
+            else if (obj != null && (ObjectUtils.TryCast(obj, out ScriptableObject soObject)))
+            {
+                log = "[" + soObject.name + "] Error in script \"" + GetObjectType(obj) + "\": " + desc;
             }
             else
             {
@@ -42,9 +46,13 @@ namespace Blacksmith
         {
             string log;
 
-            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
+            if (obj != null && ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
             {
                 log = "[" + mbObject.name + "] Warning in script \"" + GetObjectType(obj) + "\": " + desc;
+            }
+            else if (obj != null && (ObjectUtils.TryCast(obj, out ScriptableObject soObject)))
+            {
+                log = "[" + soObject.name + "] Warning in script \"" + GetObjectType(obj) + "\": " + desc;
             }
             else
             {
@@ -63,9 +71,13 @@ namespace Blacksmith
 
         public static void LogSuccess(object obj, string desc)
         {
-            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
+            if (obj != null && (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject)))
             {
                 Debug.Log("<color=green>[" + mbObject.name + "]\"" + GetObjectType(obj) + "\": " + desc + "</color>");
+            }
+            else if (obj != null && (ObjectUtils.TryCast(obj, out ScriptableObject soObject)))
+            {
+                Debug.Log("<color=green>[" + soObject.name + "]\"" + GetObjectType(soObject) + "\": " + desc + "</color>");
             }
             else
             {
@@ -99,9 +111,13 @@ namespace Blacksmith
 
         public static void Log(object obj, string desc)
         {
-            if (ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
+            if (obj != null && ObjectUtils.TryCast(obj, out MonoBehaviour mbObject))
             {
                 Debug.Log("[" + mbObject.name + "]\"" + GetObjectType(obj) + "\": " + desc);
+            }
+            else if (obj != null && (ObjectUtils.TryCast(obj, out ScriptableObject soObject)))
+            {
+                Debug.Log("[" + soObject.name + "]\"" + GetObjectType(soObject) + "\": " + desc);
             }
             else
             {

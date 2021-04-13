@@ -18,4 +18,4 @@ MonoBehaviour:
   m_Strings:
   - {fileID: 11400000, guid: a8a34cbf279b20b408c01908f9885c4f, type: 2}
   - {fileID: 11400000, guid: 61f8c9a7db999fd429a8670aaef9b2b6, type: 2}
-  m_FilePath: dico.json
+  m_FilePath: Assets/Quest/ScriptableObjects/QuestDictionary.json
