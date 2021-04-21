@@ -14,6 +14,10 @@ namespace Blacksmith
             }
             return false;
         }
+        public static JSONObject GetJSONFromString(string content)
+        {
+            return new JSONObject(content);
+        }
 
         public static bool WriteToPath(string path, JSONObject jsonObject, bool needLogs = false, bool createFile = true)
         {

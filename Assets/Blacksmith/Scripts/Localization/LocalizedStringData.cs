@@ -12,15 +12,13 @@ namespace Blacksmith
         [SerializeField]
         private string m_StringID;
         [SerializeField]
-        private string m_TempString = Constants.BLACKSMITH_UNSET_TEMP_STRING;
+        private string m_TempString;
         #endregion
 
         #region Attributes
         //PUBLIC
         //PROTECTED
         //PRIVATE
-        private bool m_LoggedWarning = false;
-        private string m_CachedString = Constants.BLACKSMITH_INVALID_LOCALIZED_STRING_VALUE;
         #endregion
 
         #region Methods
@@ -32,33 +30,30 @@ namespace Blacksmith
 
         public string GetValue()
         {
-            //String exists and is already cached, return it
-            if (m_CachedString != Constants.BLACKSMITH_INVALID_LOCALIZED_STRING_VALUE)
+            string value = "";
+            if (LocalizationHelper.TryGetDictionaryHolder(out LocalizedDictionaryHolderComponent dictionaryHolder))
             {
-                return m_CachedString;
-            }
-            else if (LocalizationHelper.TryGetDictionaryHolder(out LocalizedDictionaryHolderComponent dictionaryHolder))
-            {
-                //String is not yet cached
-                if (dictionaryHolder.TryGetLocalizedStringFromID(m_StringID, out m_CachedString))
+                if (dictionaryHolder.TryGetLocalizedStringFromID(m_StringID, out value))
                 {
-                    return m_CachedString;
+                    return value;
                 }
-            }
-            if (!m_LoggedWarning)
-            {
-                m_LoggedWarning = true;
-                DebugUtils.LogLocalizationWarning(m_StringID);
+                else
+                {
+                    DebugUtils.LogLocalizationWarning(m_StringID);
+                }
             }
             //String is not available, use temporary string instead
             if (m_TempString == "")
             {
                 DebugUtils.LogLocalizationWarning(m_StringID, "Temporary string is not set!");
+                value = "!" + m_StringID;
             }
-            return m_TempString;
+            else
+            {
+                value = "!" + m_TempString;
+            }
+            return value;
         }
-
-        public string GetLocalizedValue() { return ""; }
         //PROTECTED
         //PRIVATE
         #endregion

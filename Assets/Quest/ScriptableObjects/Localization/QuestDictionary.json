@@ -1,10 +1,12 @@
 {
 	"$GOLD_AMOUNT":{
-		"FR":"",
-		"EN":""
+		"FR":"La bonne thunasse tu connais.",
+		"EN":"",
+		"ES":""
 	},
 	"$LIFE_VALUE":{
 		"FR":"",
-		"EN":""
+		"EN":"",
+		"ES":""
 	}
 }

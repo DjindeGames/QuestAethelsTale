@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Blacksmith
 {
     public abstract class FakeSingletonComponent : BaseComponent
@@ -18,7 +21,7 @@ namespace Blacksmith
         //PUBLIC
         //PROTECTED
         //PRIVATE
-        private static int s_Instances = 0;
+        private static List<Type> s_InstantiatedSingletons = new List<Type>();
         #endregion
 
         #region Methods
@@ -26,10 +29,13 @@ namespace Blacksmith
         protected override void Awake()
         {
             base.Awake();
-            s_Instances++;
-            if (s_Instances > 1)
+            if (s_InstantiatedSingletons.Contains(this.GetType()))
             {
                 DebugUtils.LogError(this, "There is already one instance created, please remove this one!");
+            }
+            else
+            {
+                s_InstantiatedSingletons.Add(this.GetType());
             }
         }
 

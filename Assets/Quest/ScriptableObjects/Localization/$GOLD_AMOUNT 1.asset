@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: $GOLD_AMOUNT 1
   m_EditorClassIdentifier: 
   m_StringID: $GOLD_AMOUNT
-  m_TempString: 
+  m_TempString: Swagger

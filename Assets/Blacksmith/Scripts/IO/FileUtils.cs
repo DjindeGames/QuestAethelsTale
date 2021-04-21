@@ -146,35 +146,7 @@ namespace Blacksmith
             return File.Exists(path);
         }
 
-        public static string InsertFolderInPath(string path, string folder, int index)
-        {
-            List<string> newPath = new List<string>(path.Split('/'));
-            if (index <= newPath.Count)
-            {
-                newPath.Insert(index, folder);
-            }
-            for (int i = 0; i < newPath.Count - 1; i++)
-            {
-                newPath[i] = newPath[i] + '/';
-            }
-            return String.Concat(newPath);
-        }
-
-        public static string RemoveFolderFromPath(string path, int index)
-        {
-            List<string> newPath = new List<string>(path.Split('/'));
-            if (index <= newPath.Count)
-            {
-                newPath.RemoveAt(index);
-            }
-            for (int i = 0; i < newPath.Count - 1; i++)
-            {
-                newPath[i] = newPath[i] + '/';
-            }
-            return String.Concat(newPath);
-        }
-
-        public static string RemoveFileFromPath(string path)
+        public static string GetParentFolder(string path)
         {
             List<string> newPath = new List<string>(path.Split('/'));
             if (newPath.Count > 1)

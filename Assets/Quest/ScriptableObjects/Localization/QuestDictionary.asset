@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: QuestDictionary
   m_EditorClassIdentifier: 
   m_SupportedLanguages:
-  - FR
-  - EN
+  - m_ID: FR
+    m_Language: "Fran\xE7ais"
+  - m_ID: EN
+    m_Language: English
   m_Strings:
   - {fileID: 11400000, guid: a8a34cbf279b20b408c01908f9885c4f, type: 2}
   - {fileID: 11400000, guid: 61f8c9a7db999fd429a8670aaef9b2b6, type: 2}
-  m_FilePath: Assets/Quest/ScriptableObjects/QuestDictionary.json
+  m_FilePath: st/ScriptableObjects/Localization/QuestDictionary.jsononary.json
+  m_GeneratedDictionary: {fileID: 4900000, guid: b916e722879b4154884a42cec2fb62a9, type: 3}

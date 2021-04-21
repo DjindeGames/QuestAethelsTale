@@ -13,11 +13,18 @@ namespace Blacksmith
         #region Serialized Fields
         //PUBLIC
         [BoxGroup("Content")]
-        public string[] m_SupportedLanguages;
+        [SerializeField]
+        private LocalizedLanguage[] m_SupportedLanguages;
         [BoxGroup("Content")]
-        public LocalizedStringData[] m_Strings;
-        [Header("Generation")]
-        public string m_FilePath;
+        [SerializeField]
+        private LocalizedStringData[] m_Strings;
+        [BoxGroup("Generation")]
+        [SerializeField]
+        private string m_FilePath;
+        [BoxGroup("Generation")]
+        //[ReadOnly]
+        [SerializeField]
+        private TextAsset m_GeneratedDictionary;
         #endregion
 
 #if UNITY_EDITOR
@@ -58,6 +65,7 @@ namespace Blacksmith
                 if (BackupDictionary())
                 {
                     FileUtils.DeleteFile(m_FilePath, true);
+                    m_GeneratedDictionary = null;
                 }
                 else
                 {
@@ -118,7 +126,12 @@ namespace Blacksmith
                             }
                         }
 
-                        List<string> missingLanguages = new List<string>(m_SupportedLanguages);
+                        List<string> missingLanguages = new List<string>();
+                        foreach(LocalizedLanguage language in m_SupportedLanguages)
+                        {
+                            missingLanguages.Add(language.GetID());
+                        }
+
                         List<string> languagesToRemove = new List<string>();
                         foreach (string languageID in dictionaryEntries[stringID].Keys)
                         {
@@ -171,9 +184,9 @@ namespace Blacksmith
                             if (stringData.GetID() != "")
                             {
                                 Dictionary<string, string> valuesByLanguage = new Dictionary<string, string>();
-                                foreach (string language in m_SupportedLanguages)
+                                foreach (LocalizedLanguage language in m_SupportedLanguages)
                                 {
-                                    valuesByLanguage[language] = "";
+                                    valuesByLanguage[language.GetID()] = "";
                                 }
                                 dictionaryEntries[stringData.GetID()] = valuesByLanguage;
                             }
@@ -189,6 +202,7 @@ namespace Blacksmith
                     if (BackupDictionary())
                     {
                         JSONUtils.WriteToPath(m_FilePath, LocalizationUtils.GetJSONObjectFromLocalizedEntries(dictionaryEntries), true);
+                        ObjectUtils.TryCast(AssetDatabase.LoadAssetAtPath(m_FilePath, typeof(TextAsset)), out m_GeneratedDictionary);
                     }
                     else
                     {
@@ -224,14 +238,14 @@ namespace Blacksmith
 
         private string GetBackupFolderPath()
         {
-            return FileUtils.RemoveFileFromPath(m_FilePath) + FileUtils.GetFileNameWithoutExtension(m_FilePath) + Constants.BLACKSMITH_DICTIONARY_BACKUP_FOLDER_NAME;
+            return FileUtils.GetParentFolder(m_FilePath) + FileUtils.GetFileNameWithoutExtension(m_FilePath) + Constants.BLACKSMITH_DICTIONARY_BACKUP_FOLDER_NAME;
         }
 
         private bool IsLanguageSupported(string languageID)
         {
-            foreach (string supportedLanguage in m_SupportedLanguages)
+            foreach (LocalizedLanguage supportedLanguage in m_SupportedLanguages)
             {
-                if (supportedLanguage == languageID)
+                if (supportedLanguage.GetID() == languageID)
                 {
                     return true;
                 }
@@ -255,15 +269,15 @@ namespace Blacksmith
         {
             duplicated = "";
             List<string> supportedLanguages = new List<string>();
-            foreach (string language in m_SupportedLanguages)
+            foreach (LocalizedLanguage language in m_SupportedLanguages)
             {
-                if (!supportedLanguages.Contains(language))
+                if (!supportedLanguages.Contains(language.GetID()))
                 {
-                    supportedLanguages.Add(language);
+                    supportedLanguages.Add(language.GetID());
                 }
                 else
                 {
-                    duplicated = language;
+                    duplicated = language.GetID();
                     return true;
                 }
             }
@@ -290,5 +304,27 @@ namespace Blacksmith
         }
         #endregion
 #endif
+
+        #region Methods
+        //PUBLIC
+        public TextAsset GetGeneratedDictionary()
+        {
+            return m_GeneratedDictionary;
+        }
+        //PROTECTED
+        //PRIVATE
+        #endregion
     }
+}
+
+[System.Serializable]
+public class LocalizedLanguage
+{
+    [SerializeField]
+    private string m_ID;
+    [SerializeField]
+    private string m_Language;
+
+    public string GetID() { return m_ID; }
+    public string GetLanguage() { return m_Language; }
 }

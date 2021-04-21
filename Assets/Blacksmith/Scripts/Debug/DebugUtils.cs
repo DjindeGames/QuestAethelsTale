@@ -87,7 +87,7 @@ namespace Blacksmith
 
         public static void LogLocalizationWarning(string ID)
         {
-            string log = "\"" + ID + "\" was not found in LocalizationDictionary, will use temporary string instead.";
+            string log = "Localized value for \"" + ID + "\" was not found in LocalizationDictionary, will use temporary string instead.";
             Debug.Log("<color=purple>" + log + "</color>");
 #if !UNITY_EDITOR
             if (DebugHelper.TryGetDebugLogger(out DebugLoggerComponent debugLogger))

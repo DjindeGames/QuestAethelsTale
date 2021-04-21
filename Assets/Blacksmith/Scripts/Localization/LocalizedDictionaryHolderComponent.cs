@@ -1,16 +1,20 @@
 using NaughtyAttributes;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Blacksmith
 {
-    public abstract class LocalizedDictionaryHolderComponent : FakeSingletonComponent
+    public class LocalizedDictionaryHolderComponent : FakeSingletonComponent
     {
         #region Serialized Fields
         //PUBLIC
         //PROTECTED
         //PRIVATE
+        [BoxGroup("References")]
+        [SerializeField]
+        private LocalizedDictionaryData m_DictionaryData;
+        [BoxGroup("Settings")]
+        [SerializeField]
+        private string m_CurrentLanguageID;
         #endregion
 
         #region Events
@@ -23,6 +27,7 @@ namespace Blacksmith
         //PUBLIC
         //PROTECTED
         //PRIVATE
+        private RuntimeLocalizedDictionary m_RuntimeDictionary = new RuntimeLocalizedDictionary();
         #endregion
 
         #region Methods
@@ -30,6 +35,22 @@ namespace Blacksmith
         protected override void Awake()
         {
             base.Awake();
+            if (m_DictionaryData != null)
+            {
+                TextAsset dictionary = m_DictionaryData.GetGeneratedDictionary();
+                if (dictionary != null)
+                {
+                    m_RuntimeDictionary.LoadFromText(dictionary.text);
+                }
+                else
+                {
+                    DebugUtils.LogError(this, "Dictionary datas have not been generated!");
+                }
+            }
+            else
+            {
+                DebugUtils.LogError(this, "No dictionary data!");
+            }
         }
 
         protected override void Start()
@@ -39,8 +60,7 @@ namespace Blacksmith
         //PUBLIC
         public bool TryGetLocalizedStringFromID(string stringID, out string localizedString)
         {
-            localizedString = Constants.BLACKSMITH_INVALID_LOCALIZED_STRING_VALUE;
-            return false;
+            return m_RuntimeDictionary.TryGetLocalizedTextFromID(stringID, m_CurrentLanguageID, out localizedString);
         }
         //PROTECTED
         protected override EBaseFlags[] GetBaseFlags()

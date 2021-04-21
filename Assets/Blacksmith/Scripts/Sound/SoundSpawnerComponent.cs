@@ -15,7 +15,7 @@ namespace Blacksmith
         Point
     }
 
-    public class SoundSpawnerComponent : BaseComponent
+    public class SoundSpawnerComponent : FakeSingletonComponent
     {
         #region Serialized Fields
         //PUBLIC
